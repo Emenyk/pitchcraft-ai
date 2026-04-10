@@ -1,53 +1,57 @@
 <?php
+// app/Http/Controllers/ProposalController.php
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Proposal;
+use App\Services\ProposalService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProposalController extends Controller
 {
-    public function index()
-    {
-        return view('pitchcraft');
-    }
+    public function __construct(
+        private readonly ProposalService $service
+    ) {}
 
     public function generate(Request $request): JsonResponse
     {
-        $request->validate([
-            'job_description' => 'required|string',
-            'tone' => 'required|in:professional,confident,short'
+        $validated = $request->validate([
+            'job_description' => ['required', 'string', 'min:20', 'max:5000'],
+            'tone'            => ['sometimes', Rule::in(['professional', 'confident', 'short'])],
         ]);
 
-        // Here you would integrate with your AI service
-        // For now, returning mock responses
-        $tone = $request->input('tone');
-        $jobDesc = $request->input('job_description');
-        
-        $responses = [
-            'professional' => [
-                'opening' => "Thank you for sharing this detailed project opportunity. After carefully reviewing your requirements, I'm confident I can deliver exceptional results.",
-                'understanding' => "I understand you need a comprehensive solution that balances functionality, aesthetics, and performance. Your emphasis on user experience and scalability aligns perfectly with my expertise.",
-                'fit' => "With over 8 years of experience in full-stack development and having successfully delivered 50+ similar projects, I bring proven methodologies and technical excellence to your initiative.",
-                'approach' => "My approach follows agile best practices: discovery phase, iterative development with weekly demos, rigorous QA testing, and seamless deployment with post-launch support.",
-                'closing' => "I look forward to discussing how we can bring your vision to life. Let's schedule a call to align on specific deliverables and timelines."
-            ],
-            'confident' => [
-                'opening' => "I've got exactly what you need for this project. No fluff, just results.",
-                'understanding' => "You need this done right, on time, and with zero headaches. I've been building solutions like this for top-tier clients.",
-                'fit' => "I'm the expert you're looking for. My portfolio includes Fortune 500 projects and I consistently exceed expectations.",
-                'approach' => "I'll handle everything from architecture to deployment. You get weekly updates, full transparency, and a product that works flawlessly.",
-                'closing' => "Ready to start immediately. Let me know when you want to kick this off."
-            ],
-            'short' => [
-                'opening' => "Perfect fit for your project. Let me show you why.",
-                'understanding' => "I get exactly what you need - quality delivery without the usual agency overhead.",
-                'fit' => "5+ years experience. Dozens of happy clients. Clean code. Fast delivery.",
-                'approach' => "Simple process: Discuss → Build → Test → Launch → Support.",
-                'closing' => "Available to start tomorrow. Let's make this happen."
-            ]
-        ];
-        
-        return response()->json($responses[$tone]);
+        $proposal = Proposal::create([
+            'job_description' => $validated['job_description'],
+            'tone'            => $validated['tone'] ?? 'professional',
+        ]);
+
+        try {
+            $result = $this->service->generate($proposal);
+
+            return response()->json([
+                'success'       => true,
+                'id'            => $proposal->id,
+                'opening'       => $result['opening'],
+                'understanding' => $result['understanding'],
+                'fit'           => $result['fit'],
+                'approach'      => $result['approach'],
+                'closing'       => $result['closing'],
+            ]);
+
+        } catch (\Throwable $e) {
+            // Tell the frontend the specific reason
+            $isRateLimit = str_contains($e->getMessage(), 'rate limit') ||
+                           str_contains($e->getMessage(), 'rate limited');
+
+            return response()->json([
+                'success' => false,
+                'message' => $isRateLimit
+                    ? 'AI provider is busy. Please wait 10 seconds and try again.'
+                    : 'Proposal generation failed. Please try again.',
+                'error'   => config('app.debug') ? $e->getMessage() : null,
+            ], $isRateLimit ? 429 : 500);
+        }
     }
 }

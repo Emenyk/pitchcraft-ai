@@ -206,7 +206,7 @@
                         <a href="#how-it-works" class="text-gray-300 hover:text-white transition">How it Works</a>
                         <a href="#pricing" class="text-gray-300 hover:text-white transition">Pricing</a>
                     </div>
-                    <a href="/pitchcraft" class="bg-indigo-600 hover:bg-indigo-500 px-5 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg shadow-indigo-600/30">
+                    <a href="{{ route("pitchcraft") }}" class="bg-indigo-600 hover:bg-indigo-500 px-5 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg shadow-indigo-600/30">
                         Get Started →
                     </a>
                 </div>
@@ -247,7 +247,7 @@
                         </p>
                         
                         <div class="flex flex-col sm:flex-row gap-4 mb-8">
-                            <a href="/pitchcraft" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 shadow-xl flex items-center justify-center gap-2 group">
+                            <a href="{{ route("pitchcraft") }}" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 shadow-xl flex items-center justify-center gap-2 group">
                                 Start Creating Free
                                 <svg class="w-5 h-5 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
@@ -446,7 +446,7 @@
                         Join thousands of freelancers who use PitchCraft AI to create winning proposals
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a href="/pitchcraft" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold transition-all transform hover:scale-105 shadow-xl inline-flex items-center justify-center gap-2 group">
+                        <a href="{{ route("pitchcraft") }}" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold transition-all transform hover:scale-105 shadow-xl inline-flex items-center justify-center gap-2 group">
                             Start Free Trial
                             <svg class="w-5 h-5 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>

@@ -1,65 +1,61 @@
 <?php
 
-namespace App\AI\Agents;
+namespace App\Ai\Agents;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\HasStructuredOutput;
-use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Promptable;
 use Stringable;
 
-#[Provider(Lab::OpenAI)]
-#[Model('gpt-4o')]
+#[Provider('mistral')]
+#[Model('mistral-small-latest')]
 #[Temperature(0.7)]
+#[MaxTokens(1024)]
 class ProposalWriterAgent implements Agent, HasStructuredOutput
 {
     use Promptable;
 
+    public function __construct(private string $tone = 'professional') {}
+
     public function instructions(): Stringable|string
     {
-        return <<<INSTRUCTIONS
-        You are an expert freelance proposal writer. 
-        You craft compelling, tailored proposals based on a structured job analysis.
+        $toneGuide = match ($this->tone) {
+            'confident' => 'Write with bold confidence and directness. Assert expertise. Zero hedging.',
+            'short'     => 'Be extremely concise — every sentence earns its place. No padding.',
+            default     => 'Write in a polished, professional tone that naturally builds trust.',
+        };
 
-        You will receive:
-        - A job analysis (skills, experience level, deliverables, matched skills, relevant experience)
-        - The desired tone: professional | confident | short
-
-        Tone guidelines:
-        - professional: formal, articulate, thorough
-        - confident: assertive, results-oriented, bold
-        - short: concise, direct, no fluff — each section max 2 sentences
-
-        Write each section of the proposal naturally. Do NOT use placeholders like [Your Name].
-        Write as if you ARE the freelancer making the pitch.
-        INSTRUCTIONS;
+        return "You are an expert freelance proposal writer who wins contracts. {$toneGuide} " .
+               "Be specific — reference actual job details and matched skills provided to you. " .
+               "Never use filler phrases like 'I am excited to apply'.";
     }
 
     public function schema(JsonSchema $schema): array
     {
         return [
             'opening' => $schema->string()
-                ->description('A strong opening line that hooks the client immediately.')
+                ->description('1-2 sentences. A compelling hook showing you understand the job immediately.')
                 ->required(),
 
             'understanding' => $schema->string()
-                ->description('Demonstrates clear understanding of the client\'s problem and goals.')
+                ->description('2-3 sentences showing you understand the client\'s real problem.')
                 ->required(),
 
             'fit' => $schema->string()
-                ->description('Explains why the freelancer is the right fit based on matched skills.')
+                ->description('2-3 sentences on why YOU specifically — reference matched skills and experience.')
                 ->required(),
 
             'approach' => $schema->string()
-                ->description('Describes the proposed approach or methodology for this project.')
+                ->description('2-4 sentences on how you would tackle this project step by step.')
                 ->required(),
 
             'closing' => $schema->string()
-                ->description('A compelling call to action to invite the client to respond.')
+                ->description('1-2 sentences. Confident, specific call to action.')
                 ->required(),
         ];
     }

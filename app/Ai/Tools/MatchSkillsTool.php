@@ -1,6 +1,7 @@
 <?php
+// app/Ai/Tools/MatchSkillsTool.php
 
-namespace App\AI\Tools;
+namespace App\Ai\Tools;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -10,77 +11,66 @@ use Stringable;
 class MatchSkillsTool implements Tool
 {
     /**
-     * Freelancer's skills profile.
-     * In a real app, pull this from the database or config.
+     * Hardcoded user profile — swap this for a DB query per user later.
      */
-    private array $freelancerSkills = [
-        'Laravel',
-        'PHP',
-        'REST API',
-        'MySQL',
-        'Vue.js',
-        'React',
-        'Docker',
-        'Redis',
-        'AWS',
-        'TDD',
-        'Git',
-    ];
-
-    private array $experienceSummaries = [
-        'Laravel'   => '5 years building production Laravel APIs and SaaS platforms.',
-        'PHP'       => '7 years of professional PHP development.',
-        'REST API'  => 'Designed and maintained RESTful APIs consumed by mobile and web clients.',
-        'MySQL'     => 'Database design, query optimization, and migrations at scale.',
-        'Vue.js'    => '3 years building reactive frontends with Vue 2 and 3.',
-        'React'     => '2 years of React development for client dashboards.',
-        'Docker'    => 'Containerized applications for CI/CD pipelines.',
-        'Redis'     => 'Used for caching, queues, and pub/sub in high-traffic apps.',
-        'AWS'       => 'Deployed and managed EC2, S3, RDS, and Lambda workloads.',
-        'TDD'       => 'PHPUnit and Pest test suites with >80% coverage on major projects.',
-        'Git'       => 'Git flow, code reviews, and monorepo experience.',
+    private array $profile = [
+        'skills' => [
+            'Laravel', 'PHP', 'Vue.js', 'REST APIs', 'MySQL',
+            'TailwindCSS', 'Docker', 'AWS', 'React', 'Node.js',
+            'Python', 'AI/LLM Integration', 'PostgreSQL', 'Redis',
+        ],
+        'experience_years' => 5,
+        'highlights' => [
+            'Built and deployed 10+ Laravel applications to production',
+            'Integrated OpenAI and Anthropic APIs into live SaaS products',
+            'Led backend architecture for a platform serving 50k+ users',
+        ],
     ];
 
     public function description(): Stringable|string
     {
-        return 'Match the job\'s required skills against the freelancer\'s skill profile. '
-            . 'Returns matched skills and relevant experience summaries for each matched skill.';
+        return 'Matches a list of required job skills against the freelancer\'s profile. ' .
+               'Returns matched skills, unmatched skills, a match score (0-100), ' .
+               'and relevant experience highlights.';
     }
 
     public function handle(Request $request): Stringable|string
     {
-        $requiredSkills = $request['skills'] ?? [];
+        $required    = $request['required_skills'] ?? [];
+        $profileSkills = array_map('strtolower', $this->profile['skills']);
 
-        $matched = [];
-        $experience = [];
+        $matched   = [];
+        $unmatched = [];
 
-        foreach ($requiredSkills as $skill) {
-            // Case-insensitive partial match
-            foreach ($this->freelancerSkills as $mySkill) {
-                if (stripos($mySkill, $skill) !== false || stripos($skill, $mySkill) !== false) {
-                    $matched[] = $mySkill;
-                    if (isset($this->experienceSummaries[$mySkill])) {
-                        $experience[] = $this->experienceSummaries[$mySkill];
-                    }
-                    break;
-                }
+        foreach ($required as $skill) {
+            if (in_array(strtolower($skill), $profileSkills)) {
+                $matched[] = $skill;
+            } else {
+                $unmatched[] = $skill;
             }
         }
 
-        $matched    = array_unique($matched);
-        $experience = array_unique($experience);
+        $score = count($required) > 0
+            ? round((count($matched) / count($required)) * 100)
+            : 0;
 
-        return json_encode([
+        $result = [
             'matched_skills'      => $matched,
-            'relevant_experience' => $experience,
-        ]);
+            'unmatched_skills'    => $unmatched,
+            'match_score'         => $score,
+            'experience_years'    => $this->profile['experience_years'],
+            'relevant_highlights' => $this->profile['highlights'],
+        ];
+
+        // Tool must return a string — SDK passes it back to the LLM as context
+        return json_encode($result);
     }
 
     public function schema(JsonSchema $schema): array
     {
         return [
-            'skills' => $schema->array()
-                ->items($schema->string())
+            'required_skills' => $schema->array()
+                ->items($schema->string('skill', 'A required skill from the job post'))
                 ->required(),
         ];
     }
